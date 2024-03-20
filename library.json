@@ -1,0 +1,26 @@
+{
+    "name": "RemoteLogLibrary",
+    "version": "1.0.0",
+    "description": "A simple library for remote logging",
+    "keywords": [
+        "log",
+        "logging",
+        "library",
+        "remote"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https"
+    },
+    "authors": {
+        "name": "Rubén García García",
+        "email": "rubenggjac@gmail.com",
+        "url": "www.linkedin.com/in/rubengg05"
+    },
+    "license": "MIT",
+    "dependencies": {
+        "knolleary/PubSubClient": "2.8.0"
+    },
+    "frameworks": "arduino",
+    "platforms": "*"
+}
