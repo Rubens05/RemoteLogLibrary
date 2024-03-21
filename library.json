@@ -1,6 +1,6 @@
 {
     "name": "RemoteLogLibrary",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A simple library for remote logging",
     "keywords": [
         "log",
@@ -10,7 +10,7 @@
     ],
     "repository": {
         "type": "git",
-        "url": "https"
+        "url": "https://github.com/Rubens05/RemoteLogLibrary.git"
     },
     "authors": {
         "name": "Rubén García García",

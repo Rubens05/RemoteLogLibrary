@@ -44,14 +44,12 @@ void loop()
         Serial.print("ERROR");
         logger.setTopic("Topic 2");
         logger.setIdBoard("Aphelios");
-
         logger.logERROR("Mensaje de error!");
         break;
     case 3:
         Serial.print("CRITICO");
         logger.setTopic("Topic 3");
         logger.setIdBoard("Kratos");
-
         logger.logCRITICO("Mensaje crítico!");
         break;
     default:
