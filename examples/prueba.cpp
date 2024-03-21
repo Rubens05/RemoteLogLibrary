@@ -1,12 +1,12 @@
 #include <Arduino.h>
 #include "LogLibrary.h"
 
-const char *ssid = "Orange-E475";
-const char *password = "3mcUAJZC";
-const char *mqttServer = "192.168.1.117";
+const char *ssid = "wifiNetwork";
+const char *password = "wifiPassword";
+const char *mqttServer = "IP_BROKER";
 const int mqttPort = 1883;
-const char *mqttTopic = "logStatus"; // NO OS OBLIGATORIO PONERLO AQUI
-const char *idBoard = "PlacaXD";
+const char *mqttTopic = "mqttTopic";
+const char *idBoard = "idBoard";
 Logger logger;
 
 void funcionalidadUsuario();
