@@ -7,6 +7,8 @@ const char *mqttServer = "IP_BROKER";
 const int mqttPort = 1883;
 const char *mqttTopic = "mqttTopic";
 const char *idBoard = "idBoard";
+const char *timeZone = "CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00"; // https://remotemonitoringsystems.ca/time-zone-abbreviations.php
+const char *ntpServer = "pool.ntp.org";                                // https://www.ntppool.org/es/zone/es
 Logger logger;
 
 void funcionalidadUsuario();
@@ -14,7 +16,7 @@ void funcionalidadUsuario();
 void setup()
 {
     Serial.begin(9600);
-    logger.init(ssid, password, mqttServer, mqttPort, mqttTopic, idBoard);
+    logger.init(ssid, password, mqttServer, mqttPort, mqttTopic, idBoard, timeZone, ntpServer);
 }
 
 void loop()
