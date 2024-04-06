@@ -2,105 +2,95 @@
 
 Librería que permite a los usuarios monitorizar y auditar en tiempo real las placas utilizadas en sus proyectos de forma remota. 
 
-## Instalación
+## 1. Instalación
 
-1. Importar en platformio.ini el repositorio de la librería. (lib_deps = https://github.com/Rubens05/RemoteLogLibrary.git)
+Importar en platformio.ini el repositorio de la librería. (lib_deps = https://github.com/Rubens05/RemoteLogLibrary.git)
 
-## Funciones
+## 2. Funciones
 
-### Función init
-Función que se encarga de preparar el contexto para el funcionamiento correcto de la libreria. Recibe los parámetros: redWifi, pwdWifi, mqttServer, mqttPort, mqttTopic e idBoard.
-A esta función esta sobrecargada por lo que se puede llamar con diferentes parametros, siendo obligatorios los parametros redWifi, pwdWifi, mqttServer y mqttPort.
 
-### Función logX
-Función que el usuario llama para enviar un mensaje al broker.
-Esta función 
+#### 2.1 Función init
+Función que se encarga de preparar el entorno para el funcionamiento correcto de la libreria. Esta función está sobrecargada por lo que se puede llamar con diferentes parámetros, siendo obligatorios cuatro parámetros:
 
-### Función para formatear logs //TODO
-Función para que el usuario pueda elegir el formato de los logs que se envían.
+| Parametros Obligatorios  |/|   Parametros Opcionales   | 
+| ------------------------ |-| ------------------------ |
+|         redWifi          |/|         mqttTopic        |
+|         pwdWifi          |/|         idBoard          |        
+|         mqttServer       |/|         timeZone         |
+|         mqttPort         |/|         ntpServer        |
 
+   
+
+```
+- void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort);
+- void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic);
+- void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic, const char *idBoard);
+- void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic, const char *idBoard, const char *timeZone);
+- void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic, const char *idBoard, const char *timeZone, const char *ntpServer);
+
+```
+
+#### 2.2 Función logX
+Función que el usuario llama para enviar un mensaje de log.
+Funciones logX disponibles:
+```
+- logINFO(const char *message);
+- logWARNING(const char *message);
+- logCRITCAL(const char *message);
+- logERROR(const char *message);
+- logDEBUG(const char *message);
+```
+### 2.3 Función para dar formato a los logs 
+Función para que el usuario pueda elegir el formato de los logs que se envían. Para el correcto uso de esta función se debe utilizar una cadena que contenga entre llaves "{}", el parámetro deseado, siendo posible los siguientes valores de parametros:
+- level
+- message 
+- timestamp
+- idSender
+
+Un ejemplo sería:
+
+``` 
+const char *logFormat = "{level}-{message}-{timestamp}-{idSender}";
+```
+
+El resultado del formato anterior sería el siguiente:
+```
+[ERROR] - Message: Mensaje de error! - Timestamp: April 04 2024 17:20:21 - ID: defaultIdBoard - 
+```
+
+Este ejemplo anterior es el `formato por defecto` de la librería, en caso de no especificar un formato este será el utilizado.
 
 ## Uso
 
+Una vez entendidas las funcionalidades básicas de la librería se puede empezar a utilizar.
 
 ### Para utilizar la librería es esencial tener los siguientes elementos.
  
-- Una red wifi (y la contraseña) para conectar la placa.
-- Un broker mqtt (IP y Puerto) donde enviar los logs.
-- Un Topic al que publicar.
-- Una placa que haga sus tareas.
+- Una red wifi (y la contraseña).
+- Un broker mqtt (IP y Puerto).
+- Una placa que conectaremos a la Red Wifi y enviará los logs al Broker mqtt.
 
 ### Primeros pasos
 
 1. Crear un objeto Logger 
 
 ```c++
-    Logger loggerName;
+Logger loggerName;
 ```
 
-2. Llamar a la función Logger.init, con los parametros de red (wifi y contraseña), de broker (servidor y puerto), un topic, y un id de placa.
+2. Llamar a la función Logger.init deseada.
 
 ```c++
-    logger.init(redWifi, pwdWifi, mqttServer, mqttPort, mqttTopic, idBoard);
+// Versión simple con parámetros obligatorios
+logger.init(redWifi, pwdWifi, mqttServer, mqttPort);
 ```
 3. ¡Listo!
 
-Ahora solo tendrás que implementar tu lógica y decidir cuando enviar los mensajes de logs. 
+Ahora solo tendrás que implementar tu lógica y decidir cuándo utilizar las funciones `logX`. Además, opcionalmente podrás cambiar el formato de los logs con la función `setLogFormat`.
 ## Ejemplos:
 
 > random.cpp
 
-```c++
-    const char *ssid = "wifiNetwork";
-    const char *password = "wifiPassword";
-    const char *mqttServer = "IP_BROKER";
-    const int mqttPort = 1883;
-    const char *mqttTopic = "topicUsuario";
-    const char *idBoard = "placaUsuario";
-    Logger logger;
-
-    void funcionalidadUsuario();
-
-    void setup()
-    {
-        Serial.begin(9600);
-        logger.init(ssid, password, mqttServer, mqttPort, mqttTopic, idBoard);
-    }
-
-
-    // Generar un número aleatorio entre 0 y 20
-    int numeroAleatorio = random(0, 21);
-    // FUNCIONALIDAD DEL USUARIO
-    funcionalidadUsuario();
-
-    if (numeroAleatorio >= 0 && numeroAleatorio <= 5)
-    {
-        logger.logINFO("Error en la placa del usuario");
-    }
-    else if (numeroAleatorio >= 6 && numeroAleatorio <= 10)
-    {
-        logger.logWARNING("Advertencia en la placa del usuario");
-    }
-    else if (numeroAleatorio >= 11 && numeroAleatorio <= 15)
-    {
-        logger.logERROR("Error en la placa del usuario");
-    }
-    else if (numeroAleatorio >= 16 && numeroAleatorio <= 20)
-    {
-        logger.logINFO("Placa del usuario funcionando correctamente");
-    }
-```
-El resultado del codigo anterior sería:
-```
-topicUsuario [INFO] Placa del usuario funcionando correctamente, ID: PlacaUsuario, Timestamp: 2021-09-01 12:00:00
-topicUsuario [INFO] Error en la placa del usuario, ID: placaUsuario, Timestamp: 2021-09-01 12:00:00
-topicUsuario [WARNING] Advertencia en la placa del usuario, ID: placaUsuario, Timestamp: 2021-09-01 12:00:00
-topicUsuario [ERROR] Error en la placa del usuario, ID: placaUsuario, Timestamp: 2021-09-01 12:00:00
-topicUsuario [ERROR] Error en la placa del usuario, ID: placaUsuario, Timestamp: 2021-09-01 12:00:00
-topicUsuario [INFO] Error en la placa del usuario, ID: placaUsuario, Timestamp: 2021-09-01 12:00:00
-```
-
-
-
+Es un script con el que se puede llamar a la función init de diferentes formas y también es posible cambiar el formato de los logs. En un bucle infinto se llamarán a las funciones logX de forma aleatoria.  
 
 

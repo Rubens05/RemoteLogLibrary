@@ -28,6 +28,11 @@ void Logger::init(const char *ssid, const char *password, const char *mqttServer
 }
 void Logger::init(const char *ssid, const char *password, const char *mqttServer, int mqttPort, const char *mqttTopic, const char *idBoard, const char *timeZone, const char *ntpServer)
 {
+    if (!ssid || !password || !mqttServer || !mqttPort)
+    {
+        Serial.println("Error: SSID, password, MQTT server or MQTT port missing.");
+        return;
+    }
     this->idBoard = idBoard;
     this->mqttServer = mqttServer;
     this->mqttPort = mqttPort;
@@ -39,6 +44,12 @@ void Logger::init(const char *ssid, const char *password, const char *mqttServer
     setupTime();
 
     this->xQueue = xQueueCreate(10, sizeof(logMessage));
+
+    if (!this->xQueue)
+    {
+        Serial.println("Error: Failed to create queue.");
+        return;
+    }
 
     xTaskCreate(
         [](void *pvParameters)
@@ -54,8 +65,24 @@ void Logger::init(const char *ssid, const char *password, const char *mqttServer
         NULL);
 }
 
+void Logger::setLogFormat(const char *format)
+{
+    if (!format)
+    {
+        Serial.println("Error: Log format missing. Using default format.");
+        delay(3000);
+        return;
+    }
+    this->logFormat = format;
+}
+
 WiFiClient Logger::setupWifi(const char *ssid, const char *password)
 {
+    if (!ssid || !password)
+    {
+        Serial.println("Error: SSID or password missing for WiFi setup.");
+        return WiFiClient();
+    }
     WiFiClient espClient;
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED)
@@ -73,27 +100,65 @@ void Logger::setupTime()
     const long gmtOffset_sec = 3600;
     const int daylightOffset_sec = 3600;
 
-    configTime(gmtOffset_sec, daylightOffset_sec, this->ntpServer);
+    try
+    {
+        configTime(gmtOffset_sec, daylightOffset_sec, this->ntpServer);
+    }
+    catch (std::exception &e)
+    {
+        Serial.println("Error: Failed to configure time.");
+    }
 }
 
 void Logger::logINFO(const char *message)
 {
+    if (!message || message == "")
+    {
+        Serial.println("Error: Log message invalid.");
+        return;
+    }
+
     createLog("INFO", message);
 }
 
 void Logger::logWARNING(const char *message)
 {
+    if (!message || message == "")
+    {
+        Serial.println("Error: Log message invalid.");
+        return;
+    }
     createLog("WARNING", message);
 }
 
 void Logger::logERROR(const char *message)
 {
+    if (!message || message == "")
+    {
+        Serial.println("Error: Log message invalid.");
+        return;
+    }
     createLog("ERROR", message);
 }
 
-void Logger::logCRITICO(const char *message)
+void Logger::logCRITICAL(const char *message)
 {
-    createLog("CRITICO", message);
+    if (!message || message == "")
+    {
+        Serial.println("Error: Log message invalid.");
+        return;
+    }
+    createLog("CRITICAL", message);
+}
+
+void Logger::logDEBUG(const char *message)
+{
+    if (!message || message == "")
+    {
+        Serial.println("Error: Log message invalid.");
+        return;
+    }
+    createLog("DEBUG", message);
 }
 
 void Logger::createLog(const char *level, const char *message)
@@ -104,15 +169,23 @@ void Logger::createLog(const char *level, const char *message)
     log.idSender = idBoard;
     log.topic = mqttTopic;
     log.timestamp = getLocalTimeString();
-    xQueueSend(xQueue, &log, portMAX_DELAY);
+    if (!xQueueSend(xQueue, &log, portMAX_DELAY))
+    {
+        Serial.println("Error: Failed to send log message to the queue.");
+    }
 }
 
 void Logger::vReceiverTask(void *pvParam)
 {
-    PubSubClient client(this->espClient);               // Crear cliente MQTT a partir del cliente WiFi
-    client.setServer(this->mqttServer, this->mqttPort); // Setear servidor MQTT
-    Serial.println("Conectando al servidor MQTT...");
-    client.connect("ESP32Client");
+    PubSubClient client(this->espClient);
+    client.setServer(this->mqttServer, this->mqttPort);
+    Serial.println("Connecting to the MQTT server...");
+    if (!client.connect("ESP32Client"))
+    {
+        Serial.println("Error: Failed to connect to MQTT server.");
+        vTaskDelete(NULL);
+        return;
+    }
     logMessage log;
     portBASE_TYPE xStatus;
     const portTickType xTicksToWait = 10000 / portTICK_RATE_MS;
@@ -121,21 +194,20 @@ void Logger::vReceiverTask(void *pvParam)
         xStatus = xQueueReceive(xQueue, &log, xTicksToWait);
         if (xStatus == pdPASS)
         {
-            // Llamar a funcion para que cree el mensaje con el formato deseado
             String message = buildMessage(log);
             Serial.println(message);
             if (client.publish(log.topic, message.c_str()))
             {
-                Serial.println("Mensaje publicado en el servidor MQTT");
+                Serial.println("Message posted on MQTT server");
             }
             else
             {
-                Serial.println("Error al publicar el mensaje en el servidor MQTT");
+                Serial.println("Error posting the message on the MQTT server");
             };
         }
         else
         {
-            Serial.println("No se ha recibido mensaje...");
+            Serial.println("No message received...");
         }
     }
     vTaskDelete(NULL);
@@ -156,44 +228,66 @@ String Logger::getLocalTimeString()
 
 String Logger::buildMessage(logMessage log)
 {
+    // Flags to avoid repeating values
+    bool level = false;
+    bool message = false;
+    bool idSender = false;
+    bool timestamp = false;
+
     const char *format = this->logFormat;
     std::stringstream ss;
 
-    std::regex pattern("\\{(.*?)\\}"); // Expresión regular para encontrar los valores dentro de los corchetes
+    // Regular expression to find the values inside the square brackets
+    std::regex pattern("\\{(.*?)\\}");
 
-    std::string logFormatStr(format); // Convertir la cadena en un objeto de string
+    // Convert string to string object
+    std::string logFormatStr(format);
 
-    std::smatch match; // Objeto para almacenar los resultados del split
+    // Object to store the split results
+    std::smatch match;
 
-    // Iterar sobre las coincidencias encontradas
+    // Iterate on the coincidences found.
     while (std::regex_search(logFormatStr, match, pattern))
     {
-        // Imprimir el valor dentro de los corchetes
-        std::cout << "Valor dentro de corchetes: " << match[1] << std::endl;
-
-        // Acualizar el stringstream con el valor encontrado
-        if (strcmp(match[1].str().c_str(), "level") == 0)
+        // Check if a value was found
+        if (match.size() == 0)
+        {
+            Serial.println("Error: Invalid input. Must be a string with at least one value in curly braces like {level}, {message}, {idSender} or {timestamp}");
+            break;
+        }
+        // Update the stringstream with the found value
+        if (strcmp(match[1].str().c_str(), "level") == 0 && !level)
         {
             ss << "[" << log.level << "]";
+            ss << " - "; // Separator between values
+            level = true;
         }
-        else if (strcmp(match[1].str().c_str(), "message") == 0)
+        else if (strcmp(match[1].str().c_str(), "message") == 0 && !message)
         {
             ss << "Message: " << log.message;
+            ss << " - "; // Separator between values
+            message = true;
         }
-        else if (strcmp(match[1].str().c_str(), "idSender") == 0)
+        else if (strcmp(match[1].str().c_str(), "idSender") == 0 && !idSender)
         {
             ss << "ID: " << log.idSender;
+            ss << " - "; // Separator between values
+            idSender = true;
         }
-        else if (strcmp(match[1].str().c_str(), "timestamp") == 0)
+        else if (strcmp(match[1].str().c_str(), "timestamp") == 0 && !timestamp)
         {
             ss << "Timestamp: " << log.timestamp.c_str();
+            ss << " - "; // Separator between values
+            timestamp = true;
         }
 
-        ss << " - "; // Separador entre los valores
-        // Actualizar la cadena para buscar la siguiente coincidencia
+        // Update the string to look for the next match
         logFormatStr = match.suffix().str();
     }
 
-    // ss << "[" << log.level << "] " << log.message << ", ID: " << log.idSender << ", Timestamp: " << log.timestamp.c_str();
     return ss.str().c_str();
 }
+
+// TODO method to send the json to mongo
+
+// TODO create jSON

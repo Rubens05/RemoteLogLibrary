@@ -1,7 +1,9 @@
 # ChangeLog for RemoteLogLibrary
 
-## [1.1.1] - 2024-04-04
-### Readme.m + functions
+## [1.1.0] - 2024-04-06
+### Updated README.Md 
+### Added logFormatter function
+### Added error handling
 
 ## [1.0.1] - 2024-03-21
 ### Readme.md
