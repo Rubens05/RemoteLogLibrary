@@ -2,6 +2,7 @@
 #define LogLibrary_h
 
 #include "Arduino.h"
+#include "ArduinoJson.h"
 #include <PubSubClient.h>
 #include <WiFi.h>
 #include <thread>
@@ -20,15 +21,18 @@
 class Logger
 {
 public:
-    Logger();
+    Logger(bool saveInDB);
     ~Logger();
+
+    bool persistent;
     const char *mqttTopic = "defaultTopic";
     const char *idBoard = "defaultIdBoard";
     const char *mqttServer;
     int mqttPort;
     const char *timeZone = "CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00"; // Change "timeZone" according to time zone https://remotemonitoringsystems.ca/time-zone-abbreviations.php
     const char *ntpServer = "pool.ntp.org";                                // Change to the NTP server of your region https://www.ntppool.org/es/zone/es
-    const char *logFormat = "{level}-{message}-{timestamp}-{idSender}";
+    const char *logFormat = "{level}-{message}-{idSender}-{topic}-{timestamp}";
+
     void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort);
     void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic);
     void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic, const char *idBoard);
@@ -61,6 +65,7 @@ private:
     void vReceiverTask(void *pvParam);
     String getLocalTimeString();
     String buildMessage(logMessage log);
+    JsonDocument buildJson(logMessage log);
 };
 
 #endif

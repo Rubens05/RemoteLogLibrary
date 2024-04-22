@@ -1,13 +1,15 @@
 #include "LogLibrary.h"
 
-Logger::Logger()
+Logger::Logger(bool saveInDB)
 {
     // Constructor
+    this->persistent = saveInDB;
 }
 
 Logger::~Logger()
 {
     // Destructor
+    vQueueDelete(xQueue);
 }
 
 void Logger::init(const char *ssid, const char *password, const char *mqttServer, int mqttPort)
@@ -177,33 +179,56 @@ void Logger::createLog(const char *level, const char *message)
 
 void Logger::vReceiverTask(void *pvParam)
 {
+    // First create a client to connect to the MQTT server
     PubSubClient client(this->espClient);
     client.setServer(this->mqttServer, this->mqttPort);
     Serial.println("Connecting to the MQTT server...");
-    if (!client.connect("ESP32Client"))
+    while (!client.connected())
     {
-        Serial.println("Error: Failed to connect to MQTT server.");
-        vTaskDelete(NULL);
-        return;
+        if (client.connect("ESP32Client"))
+        {
+            Serial.println("Connected to the MQTT server");
+            break;
+        }
+        else
+        {
+            Serial.println("Error: Failed to connect to MQTT server.");
+        }
+        delay(500);
     }
+
+    // Then create a logMessage object to store the received message
     logMessage log;
     portBASE_TYPE xStatus;
     const portTickType xTicksToWait = 10000 / portTICK_RATE_MS;
     for (;;)
     {
+        // Loop to receive messages from the queue
         xStatus = xQueueReceive(xQueue, &log, xTicksToWait);
         if (xStatus == pdPASS)
         {
+            // Create a JSON object
+            JsonDocument doc = buildJson(log);
+
+            // Create a string with the message
             String message = buildMessage(log);
+
+            // Print the message on the serial monitor
             Serial.println(message);
-            if (client.publish(log.topic, message.c_str()))
+
+            // If the persistent flag is true, save the JSON in the database
+            if (this->persistent)
             {
-                Serial.println("Message posted on MQTT server");
+                // Publish the JSON on the broker
+                if (client.publish(log.topic, doc.as<String>().c_str()))
+                {
+                    Serial.println("JSON posted on the MQTT server");
+                }
+                else
+                {
+                    Serial.println("Error posting the JSON on the MQTT server");
+                };
             }
-            else
-            {
-                Serial.println("Error posting the message on the MQTT server");
-            };
         }
         else
         {
@@ -232,6 +257,7 @@ String Logger::buildMessage(logMessage log)
     bool level = false;
     bool message = false;
     bool idSender = false;
+    bool topic = false;
     bool timestamp = false;
 
     const char *format = this->logFormat;
@@ -274,6 +300,12 @@ String Logger::buildMessage(logMessage log)
             ss << " - "; // Separator between values
             idSender = true;
         }
+        else if (strcmp(match[1].str().c_str(), "topic") == 0 && !topic)
+        {
+            ss << "Topic: " << log.topic;
+            ss << " - "; // Separator between values
+            topic = true;
+        }
         else if (strcmp(match[1].str().c_str(), "timestamp") == 0 && !timestamp)
         {
             ss << "Timestamp: " << log.timestamp.c_str();
@@ -288,6 +320,17 @@ String Logger::buildMessage(logMessage log)
     return ss.str().c_str();
 }
 
-// TODO method to send the json to mongo
+JsonDocument Logger::buildJson(logMessage log)
+{
+    // Create a JSON object
+    JsonDocument doc;
 
-// TODO create jSON
+    // Add values to the JSON object
+    doc["level"] = log.level;
+    doc["message"] = log.message;
+    doc["idSender"] = log.idSender;
+    doc["topic"] = log.topic;
+    doc["timestamp"] = log.timestamp;
+
+    return doc;
+}

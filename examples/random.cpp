@@ -8,37 +8,39 @@ const int mqttPort = 1883;
 const char *mqttTopic = "mqttTopic";
 const char *idBoard = "idBoard";
 
-// Cambiar TimeZone https://remotemonitoringsystems.ca/time-zone-abbreviations.php
-// Por defecto se usa la zona horaria de Madrid
-const char *timeZone = "CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00";
+// Change TimeZone https://remotemonitoringsystems.ca/time-zone-abbreviations.php
+// Default timezone is Madrid
+// const char *timeZone = "CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00";
 
-// Cambiar ntpServer https://www.ntppool.org/es/zone/es
-// Por defecto se usa el servidor NTP de pool.ntp.org
-const char *ntpServer = "pool.ntp.org";
+// Change ntpServer https://www.ntppool.org/es/zone/es
+// Default ntpServer is pool.ntp.org
+// const char *ntpServer = "pool.ntp.org";
 
-// Cambiar el formato del log opcionalmente
-// Si no se cambia el formato, se usará el formato por defecto que es:
-// "{level}-{message}-{timestamp}-{idSender}"
-const char *logFormat1 = "{level} - {message} -";
-const char *logFormat2 = "{message} - {timestamp} - {idSender} -";
-const char *logFormat3 = "{level} - {message} - {idSender} -";
+// Change log format optionally
+// Default format: "{level}-{message}-{idSender}-{topic}-{timestamp}"
+// const char *logFormat1 = "{level} - {message}";
+// const char *logFormat2 = "{message} - {timestamp} - {idSender}";
+// const char *logFormat3 = "{level} - {message} - {idSender}";
 
-Logger logger;
+// Init logger with different configurations
+// Logger logger(true); -> Save logs in database
+// Logger logger(false); -> Do not save logs in database
+Logger logger(false);
 
-void funcionalidadUsuario();
+void userFunctionality();
 
 void setup()
 {
     Serial.begin(9600);
 
-    // Inicializar el logger con diferentes configuraciones
+    // Initialize logger with different configurations
     logger.init(ssid, password, mqttServer, mqttPort);
     // logger.init(ssid, password, mqttServer, mqttPort, mqttTopic);
     // logger.init(ssid, password, mqttServer, mqttPort, mqttTopic, idBoard);
     // logger.init(ssid, password, mqttServer, mqttPort, mqttTopic, idBoard, timeZone);
     // logger.init(ssid, password, mqttServer, mqttPort, mqttTopic, idBoard, timeZone, ntpServer);
 
-    // Cambiar el formato del log opcionalmente
+    // Set log format
     // logger.setLogFormat(logFormat2);
     // logger.setLogFormat(logFormat3);
     // logger.setLogFormat(logFormat4);
@@ -46,38 +48,38 @@ void setup()
 
 void loop()
 {
-    // Generar un número aleatorio entre 0 y 25
-    int numeroAleatorio = random(0, 26);
+    // Random number between 0 and 25
+    int number = random(0, 26);
 
-    // FUNCIONALIDAD DEL USUARIO
-    funcionalidadUsuario();
+    // User functionality
+    userFunctionality();
 
-    if (numeroAleatorio >= 0 && numeroAleatorio <= 5)
+    if (number >= 0 && number <= 5)
     {
-        logger.logDEBUG("Debug en la placa del usuario");
+        logger.logDEBUG("Debug in the user's board");
     }
-    else if (numeroAleatorio >= 6 && numeroAleatorio <= 10)
+    else if (number >= 6 && number <= 10)
     {
-        logger.logWARNING("Advertencia en la placa del usuario");
+        logger.logWARNING("Warning in the user's board");
     }
-    else if (numeroAleatorio >= 11 && numeroAleatorio <= 15)
+    else if (number >= 11 && number <= 15)
     {
-        logger.logERROR("Error en la placa del usuario");
+        logger.logERROR("Error in the user's board");
     }
-    else if (numeroAleatorio >= 16 && numeroAleatorio <= 20)
+    else if (number >= 16 && number <= 20)
     {
-        logger.logINFO("Placa del usuario funcionando correctamente");
+        logger.logINFO("Information in the user's board");
     }
-    else if (numeroAleatorio >= 21 && numeroAleatorio <= 25)
+    else if (number >= 21 && number <= 25)
     {
-        logger.logCRITICAL("Placa del usuario en estado crítico");
+        logger.logCRITICAL("Critical in the user's board");
     }
 }
 
-void funcionalidadUsuario()
+void userFunctionality()
 {
-    // Funcion cualquiera de la placa del usuario
-    // No se debe interrumpir su funcionamiento
-    Serial.println("Funcionalidad del usuario");
+    // Functionality of the user's board
+    // Its operation should not be interrupted
+    Serial.println("User functionality running...");
     delay(500);
 }
