@@ -4,6 +4,8 @@
 const char *ssid = "wifiNetwork";
 const char *password = "wifiPassword";
 const char *mqttServer = "IP_BROKER";
+const char *mqttUser = "mqttUser";
+const char *mqttPassword = "mqttPassword";
 const int mqttPort = 1883;
 const char *mqttTopic = "mqttTopic";
 const char *idBoard = "idBoard";
@@ -18,14 +20,11 @@ const char *idBoard = "idBoard";
 
 // Change log format optionally
 // Default format: "{level}-{message}-{idSender}-{topic}-{timestamp}"
-// const char *logFormat1 = "{level} - {message}";
 // const char *logFormat2 = "{message} - {timestamp} - {idSender}";
+// const char *logFormat1 = "{level} - {message}";
 // const char *logFormat3 = "{level} - {message} - {idSender}";
 
-// Init logger with different configurations
-// Logger logger(true); -> Save logs in database
-// Logger logger(false); -> Do not save logs in database
-Logger logger(false);
+Logger logger;
 
 void userFunctionality();
 
@@ -33,17 +32,20 @@ void setup()
 {
     Serial.begin(9600);
 
+    // Set log format
+    // logger.setLogFormat(logFormat2);
+    // logger.setLogFormat(logFormat3);
+    // logger.setLogFormat(logFormat4);
+
+    // Send logs to MQTT in order to be stored in a database
+    // logger.sendToMQTT(mqttUser, mqttPassword);
+
     // Initialize logger with different configurations
     logger.init(ssid, password, mqttServer, mqttPort);
     // logger.init(ssid, password, mqttServer, mqttPort, mqttTopic);
     // logger.init(ssid, password, mqttServer, mqttPort, mqttTopic, idBoard);
     // logger.init(ssid, password, mqttServer, mqttPort, mqttTopic, idBoard, timeZone);
     // logger.init(ssid, password, mqttServer, mqttPort, mqttTopic, idBoard, timeZone, ntpServer);
-
-    // Set log format
-    // logger.setLogFormat(logFormat2);
-    // logger.setLogFormat(logFormat3);
-    // logger.setLogFormat(logFormat4);
 }
 
 void loop()

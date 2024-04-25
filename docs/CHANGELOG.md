@@ -1,6 +1,13 @@
 # ChangeLog for RemoteLogLibrary
 
-## [2.0.0] - 2024-04-06
+## [3.0.0] - 2024-04-25
+### Change serial monitor and persistent mode
+### Updated readme.md
+### Updated random.cpp
+### Added setters for topic and idboard for testing
+
+
+## [2.0.0] - 2024-04-22
 ### JSON object to MQTT Broker
 ### Allow the user to choose to send the data to the broker or only to the serial monitor
 ### Added "topic" to the logFormatter function

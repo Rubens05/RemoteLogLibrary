@@ -1,15 +1,29 @@
 #include "LogLibrary.h"
 
-Logger::Logger(bool saveInDB)
+Logger::Logger()
 {
     // Constructor
-    this->persistent = saveInDB;
 }
 
 Logger::~Logger()
 {
     // Destructor
     vQueueDelete(xQueue);
+}
+
+// Function to chose the output mode (serial monitor, or MQTT broker & serial monitor)
+void Logger::sendToMQTT(const char *mqttUser, const char *mqttPassword)
+{
+    // Error handling, check if the user and password are missing
+    if (!mqttUser || !mqttPassword)
+    {
+        Serial.println("ERROR: MQTT user or password missing.");
+        return;
+    }
+
+    this->saveInDB = true;
+    this->mqttUser = mqttUser;
+    this->mqttPassword = mqttPassword;
 }
 
 void Logger::init(const char *ssid, const char *password, const char *mqttServer, int mqttPort)
@@ -30,11 +44,23 @@ void Logger::init(const char *ssid, const char *password, const char *mqttServer
 }
 void Logger::init(const char *ssid, const char *password, const char *mqttServer, int mqttPort, const char *mqttTopic, const char *idBoard, const char *timeZone, const char *ntpServer)
 {
+    // Error handling, check if the obligatory parameters are missing
     if (!ssid || !password || !mqttServer || !mqttPort)
     {
-        Serial.println("Error: SSID, password, MQTT server or MQTT port missing.");
+        Serial.println("ERROR: SSID, password, MQTT server or MQTT port missing.");
         return;
     }
+
+    // Check if saveInDB flag is true
+    if (this->saveInDB)
+    {
+        Serial.println("INFO: SaveInDatabase mode chosen. The logs will be saved in the database.");
+    }
+    else
+    {
+        Serial.println("INFO: SaveInDatabase mode not chosen. The logs will be printed on the serial monitor.");
+    }
+
     this->idBoard = idBoard;
     this->mqttServer = mqttServer;
     this->mqttPort = mqttPort;
@@ -49,7 +75,7 @@ void Logger::init(const char *ssid, const char *password, const char *mqttServer
 
     if (!this->xQueue)
     {
-        Serial.println("Error: Failed to create queue.");
+        Serial.println("ERROR: Failed to create queue.");
         return;
     }
 
@@ -71,7 +97,7 @@ void Logger::setLogFormat(const char *format)
 {
     if (!format)
     {
-        Serial.println("Error: Log format missing. Using default format.");
+        Serial.println("WARNING: Log format missing. Using default format.");
         delay(3000);
         return;
     }
@@ -82,7 +108,7 @@ WiFiClient Logger::setupWifi(const char *ssid, const char *password)
 {
     if (!ssid || !password)
     {
-        Serial.println("Error: SSID or password missing for WiFi setup.");
+        Serial.println("ERROR: SSID or password missing for WiFi setup.");
         return WiFiClient();
     }
     WiFiClient espClient;
@@ -116,7 +142,7 @@ void Logger::logINFO(const char *message)
 {
     if (!message || message == "")
     {
-        Serial.println("Error: Log message invalid.");
+        Serial.println("ERROR: Log message invalid.");
         return;
     }
 
@@ -127,7 +153,7 @@ void Logger::logWARNING(const char *message)
 {
     if (!message || message == "")
     {
-        Serial.println("Error: Log message invalid.");
+        Serial.println("ERROR: Log message invalid.");
         return;
     }
     createLog("WARNING", message);
@@ -137,7 +163,7 @@ void Logger::logERROR(const char *message)
 {
     if (!message || message == "")
     {
-        Serial.println("Error: Log message invalid.");
+        Serial.println("ERROR: Log message invalid.");
         return;
     }
     createLog("ERROR", message);
@@ -147,7 +173,7 @@ void Logger::logCRITICAL(const char *message)
 {
     if (!message || message == "")
     {
-        Serial.println("Error: Log message invalid.");
+        Serial.println("ERROR: Log message invalid.");
         return;
     }
     createLog("CRITICAL", message);
@@ -157,7 +183,7 @@ void Logger::logDEBUG(const char *message)
 {
     if (!message || message == "")
     {
-        Serial.println("Error: Log message invalid.");
+        Serial.println("ERROR: Log message invalid.");
         return;
     }
     createLog("DEBUG", message);
@@ -173,69 +199,92 @@ void Logger::createLog(const char *level, const char *message)
     log.timestamp = getLocalTimeString();
     if (!xQueueSend(xQueue, &log, portMAX_DELAY))
     {
-        Serial.println("Error: Failed to send log message to the queue.");
+        Serial.println("ERROR: Failed to send log message to the queue.");
     }
 }
 
 void Logger::vReceiverTask(void *pvParam)
 {
-    // First create a client to connect to the MQTT server
-    PubSubClient client(this->espClient);
-    client.setServer(this->mqttServer, this->mqttPort);
-    Serial.println("Connecting to the MQTT server...");
-    while (!client.connected())
-    {
-        if (client.connect("ESP32Client"))
-        {
-            Serial.println("Connected to the MQTT server");
-            break;
-        }
-        else
-        {
-            Serial.println("Error: Failed to connect to MQTT server.");
-        }
-        delay(500);
-    }
-
-    // Then create a logMessage object to store the received message
+    // Create a logMessage object & a status variable for the queue
     logMessage log;
     portBASE_TYPE xStatus;
     const portTickType xTicksToWait = 10000 / portTICK_RATE_MS;
-    for (;;)
+
+    // First check if the saveInDB flag is true
+    if (!this->saveInDB)
     {
-        // Loop to receive messages from the queue
-        xStatus = xQueueReceive(xQueue, &log, xTicksToWait);
-        if (xStatus == pdPASS)
+        // If the saveInDB flag is false, print the messages on the serial monitor
+        for (;;)
         {
-            // Create a JSON object
-            JsonDocument doc = buildJson(log);
-
-            // Create a string with the message
-            String message = buildMessage(log);
-
-            // Print the message on the serial monitor
-            Serial.println(message);
-
-            // If the persistent flag is true, save the JSON in the database
-            if (this->persistent)
+            // Loop to receive messages from the queue
+            xStatus = xQueueReceive(xQueue, &log, xTicksToWait);
+            if (xStatus == pdPASS)
             {
+                // Create a string with the message & print the message on the serial monitor
+                String message = buildMessage(log);
+                Serial.println(message);
+            }
+            else
+            {
+                Serial.println("No message received...");
+            }
+        }
+        vTaskDelete(NULL);
+    }
+    else // If the saveInDB flag is true, send the logs to the MQTT broker
+    {
+        // First create a client to connect to the MQTT server
+        PubSubClient client(this->espClient);
+        client.setServer(this->mqttServer, this->mqttPort);
+        Serial.println("Connecting to the MQTT server...");
+
+        // Conection loop
+        while (!client.connected())
+        {
+            if (client.connect("ESP32Client", this->mqttUser, this->mqttPassword))
+            {
+                Serial.println("Connected to the MQTT server");
+                break;
+            }
+            else
+            {
+                Serial.println("ERROR: Failed to connect to MQTT server.");
+            }
+            delay(500);
+        }
+
+        // Loop to receive messages from the queue
+        for (;;)
+        {
+            xStatus = xQueueReceive(xQueue, &log, xTicksToWait);
+            if (xStatus == pdPASS)
+            {
+                // Create a JSON object
+                JsonDocument doc = buildJson(log);
+
+                // Create a string with the message
+                String message = buildMessage(log);
+
+                // Print the message on the serial monitor
+                Serial.println(message);
+
                 // Publish the JSON on the broker
                 if (client.publish(log.topic, doc.as<String>().c_str()))
                 {
-                    Serial.println("JSON posted on the MQTT server");
+                    // Serial.println("JSON posted on the MQTT server");
                 }
                 else
                 {
                     Serial.println("Error posting the JSON on the MQTT server");
                 };
             }
+            else
+            {
+                Serial.println("No message received...");
+            }
         }
-        else
-        {
-            Serial.println("No message received...");
-        }
+        vTaskDelete(NULL);
     }
-    vTaskDelete(NULL);
 }
 
 String Logger::getLocalTimeString()
@@ -278,7 +327,7 @@ String Logger::buildMessage(logMessage log)
         // Check if a value was found
         if (match.size() == 0)
         {
-            Serial.println("Error: Invalid input. Must be a string with at least one value in curly braces like {level}, {message}, {idSender} or {timestamp}");
+            Serial.println("ERROR: Invalid input. Must be a string with at least one value in curly braces like {level}, {message}, {idSender} or {timestamp}");
             break;
         }
         // Update the stringstream with the found value
@@ -333,4 +382,26 @@ JsonDocument Logger::buildJson(logMessage log)
     doc["timestamp"] = log.timestamp;
 
     return doc;
+}
+
+// Function to simulate multiple devices
+
+void Logger::setBoardId(const char *id)
+{
+    if (!id)
+    {
+        Serial.println("ERROR: ID missing.");
+        return;
+    }
+    this->idBoard = id;
+}
+
+void Logger::setMqttTopic(const char *topic)
+{
+    if (!topic)
+    {
+        Serial.println("ERROR: Topic missing.");
+        return;
+    }
+    this->mqttTopic = topic;
 }
