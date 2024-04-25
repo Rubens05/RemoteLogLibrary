@@ -1,5 +1,8 @@
 # ChangeLog for RemoteLogLibrary
 
+## [3.0.2] - 2024-04-25
+### Updated readme.md
+
 ## [3.0.1] - 2024-04-25
 ### Updated readme.md
 

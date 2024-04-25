@@ -35,10 +35,8 @@ Todos los parámetros opcionales tienen un valor `default` y la librería funcio
 
 
 ```` javascript
-//Serial monitor mode
 void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort);
 
-//Database mode
 void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort);
 
 void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic);
