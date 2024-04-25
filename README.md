@@ -39,15 +39,15 @@ Todos los parámetros opcionales tienen un valor `default` y la librería funcio
 void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort);
 
 //Database mode
-void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char mqttUser, const char mqttPassword);
+void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort);
 
-void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char mqttUser, const char mqttPassword, const char *mqttTopic);
+void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic);
 
-void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char mqttUser, const char mqttPassword, const char *mqttTopic, const char *idBoard);
+void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic, const char *idBoard);
 
-void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char mqttUser, const char mqttPassword, const char *mqttTopic, const char *idBoard, const char *timeZone);
+void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic, const char *idBoard, const char *timeZone);
 
-void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char mqttUser, const char mqttPassword, const char *mqttTopic, const char *idBoard, const char *timeZone, const char *ntpServer);
+void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic, const char *idBoard, const char *timeZone, const char *ntpServer);
 ````
 
 
@@ -114,7 +114,7 @@ https://github.com/Rubens05/RemoteLogLibraryUI.git.
 2. Llamar a la función Logger.init deseada.
 
     ```c++
-    // Simplest mode
+    // Simplest function
     logger.init(redWifi, pwdWifi, mqttServer, mqttPort);
     ```
 
