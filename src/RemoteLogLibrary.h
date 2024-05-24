@@ -1,5 +1,5 @@
-#ifndef LogLibrary_h
-#define LogLibrary_h
+#ifndef RemoteLogLibrary_h
+#define RemoteLogLibrary_h
 
 #include "Arduino.h"
 #include "ArduinoJson.h"

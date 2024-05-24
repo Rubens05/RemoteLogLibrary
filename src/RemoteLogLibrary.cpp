@@ -1,4 +1,4 @@
-#include "LogLibrary.h"
+#include "RemoteLogLibrary.h"
 
 Logger::Logger()
 {
