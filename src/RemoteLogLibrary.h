@@ -36,7 +36,7 @@ public:
     const char *ntpServer = "pool.ntp.org";                                // Change to the NTP server of your region https://www.ntppool.org/es/zone/es
     const char *logFormat = "{level}-{message}-{idSender}-{topic}-{timestamp}";
 
-    void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort); // init without authentication (this is only for serial monitor output mode)
+    void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort);
     void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic);
     void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic, const char *idBoard);
     void init(const char *ssid, const char *password, const char *mqttServer, const int mqttPort, const char *mqttTopic, const char *idBoard, const char *timeZone);
