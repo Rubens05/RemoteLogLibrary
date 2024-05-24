@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "LogLibrary.h"
+#include "RemoteLogLibrary.h"
 
 const char *ssid = "wifiNetwork";
 const char *password = "wifiPassword";

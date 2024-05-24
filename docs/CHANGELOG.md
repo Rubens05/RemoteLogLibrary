@@ -1,6 +1,9 @@
 # ChangeLog for RemoteLogLibrary
 
 ## [3.0.4] - 2024-05-24
+### Updated example
+
+## [3.0.4] - 2024-05-24
 ### Clean comments
 
 ## [3.0.3] - 2024-05-24
