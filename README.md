@@ -1,4 +1,4 @@
-# Remote Log Library (ESP)
+# Remote Log Library 
 
 Librería que permite a los usuarios monitorizar y auditar en tiempo real las placas utilizadas en sus proyectos de forma remota. Esta librería está acompañada de una aplicación web para poder interactuar de forma gráfica con los datos almacenados en la base de datos (en este caso MongoDB).
 
